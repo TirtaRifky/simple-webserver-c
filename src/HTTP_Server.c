@@ -41,8 +41,10 @@ void init_server(HTTP_Server *server, int port) {
 
 void handle_client(int client_socket, struct Route *route) {
     char client_msg[4096] = "";
+    char response[4096] = "";
 
     read(client_socket, client_msg, 4095);
+    strcpy(response, client_msg);
 
     // parsing client socket header to get HTTP method, route
     char *method = "";
@@ -92,15 +94,38 @@ void handle_client(int client_socket, struct Route *route) {
 
     char *response_data = render_static_file(template);
 
+    
+
     // Ensure the response data is not NULL
     if (response_data == NULL) {
         response_data = "<html><body><h1>404 Not Found</h1></body></html>";
     }
 
-    char http_header[4096];
-    snprintf(http_header, sizeof(http_header), "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\nContent-Type: text/html\r\n\r\n%s", strlen(response_data), response_data);
+    if (strcmp(method, "POST") == 0 && strcmp(urlRoute, "/echo") == 0) {
+        // Extract the body of the POST request
+        char *body = strstr(response, "\r\n\r\n");
+        
+        
+        if (body != NULL) {
+            body += 4; // Skip the "\r\n\r\n"
+            printf("Message from client: %s\n", body);
 
-    send(client_socket, http_header, strlen(http_header), 0);
+            // Echo the message back to the client
+            char http_header[4096];
+            snprintf(http_header, sizeof(http_header), "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\nContent-Type: text/plain\r\n\r\n%s", strlen(body), body);
+            send(client_socket, http_header, strlen(http_header), 0);
+        } else {
+            // Handle case where body is not found
+            char http_header[4096];
+            snprintf(http_header, sizeof(http_header), "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n");
+            send(client_socket, http_header, strlen(http_header), 0);
+        }
+    } else {
+        char http_header[4096];
+        snprintf(http_header, sizeof(http_header), "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\nContent-Type: text/html\r\n\r\n%s", strlen(response_data), response_data);
+        send(client_socket, http_header, strlen(http_header), 0);
+    }
+
     close(client_socket);
     free(response_data);
 }
