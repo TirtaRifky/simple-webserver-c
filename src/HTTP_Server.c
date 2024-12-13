@@ -7,32 +7,26 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <fcntl.h> // Include fcntl.h for O_CREAT
 
 void init_server(HTTP_Server *server, int port) {
     server->socket = socket(AF_INET, SOCK_STREAM, 0);
-    if (server->socket < 0) {
-        perror("socket");
+    if (server->socket == 0) {
+        perror("socket failed");
         exit(EXIT_FAILURE);
     }
 
-    int opt = 1;
-    if (setsockopt(server->socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
-        perror("setsockopt");
+    server->address.sin_family = AF_INET;
+    server->address.sin_addr.s_addr = INADDR_ANY;
+    server->address.sin_port = htons(port);
+
+    if (bind(server->socket, (struct sockaddr *)&server->address, sizeof(server->address)) < 0) {
+        perror("bind failed");
         close(server->socket);
         exit(EXIT_FAILURE);
     }
 
-    server->server_addr.sin_family = AF_INET;
-    server->server_addr.sin_addr.s_addr = INADDR_ANY;
-    server->server_addr.sin_port = htons(port);
-
-    if (bind(server->socket, (struct sockaddr *)&server->server_addr, sizeof(server->server_addr)) < 0) {
-        perror("bind");
-        close(server->socket);
-        exit(EXIT_FAILURE);
-    }
-
-    if (listen(server->socket, 10) < 0) {
+    if (listen(server->socket, 3) < 0) {
         perror("listen");
         close(server->socket);
         exit(EXIT_FAILURE);
@@ -103,4 +97,25 @@ void handle_client(int client_socket, struct Route *route) {
     send(client_socket, http_header, strlen(http_header), 0);
     close(client_socket);
     free(response_data);
+}
+
+void init_semaphore(sem_t **sem, const char *name, unsigned int value) {
+    *sem = sem_open(name, O_CREAT, 0644, value);
+    if (*sem == SEM_FAILED) {
+        perror("sem_open");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void wait_semaphore(sem_t *sem) {
+    sem_wait(sem);
+}
+
+void post_semaphore(sem_t *sem) {
+    sem_post(sem);
+}
+
+void close_semaphore(sem_t *sem, const char *name) {
+    sem_close(sem);
+    sem_unlink(name);
 }
