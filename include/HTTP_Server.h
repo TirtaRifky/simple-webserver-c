@@ -16,5 +16,7 @@ void init_semaphore(sem_t **sem, const char *name, unsigned int value);
 void wait_semaphore(sem_t *sem);
 void post_semaphore(sem_t *sem);
 void close_semaphore(sem_t *sem, const char *name);
+void configure_signal_handling();
+void sigchld_handler(int signo);
 
 #endif // HTTP_SERVER_H

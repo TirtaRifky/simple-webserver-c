@@ -1,5 +1,4 @@
 #include "HTTP_Server.h"
-#include "Routes.h"
 #include "Response.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,8 +6,11 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <fcntl.h> // Include fcntl.h for O_CREAT
+#include <fcntl.h>
+#include <signal.h>
+#include <sys/wait.h>
 
+// Inisialisasi server
 void init_server(HTTP_Server *server, int port) {
     server->socket = socket(AF_INET, SOCK_STREAM, 0);
     if (server->socket == 0) {
@@ -33,20 +35,19 @@ void init_server(HTTP_Server *server, int port) {
     }
 }
 
+// Penanganan client
 void handle_client(int client_socket, struct Route *route) {
     char client_msg[4096] = "";
 
     read(client_socket, client_msg, 4095);
 
-    // parsing client socket header to get HTTP method, route
+    // Parsing HTTP request
     char *method = "";
     char *urlRoute = "";
     char *http_version = "";
 
     char *client_http_header = strtok(client_msg, "\n");
-
     char *header_token = strtok(client_http_header, " ");
-    
     int header_parse_counter = 0;
 
     while (header_token != NULL) {
@@ -70,7 +71,7 @@ void handle_client(int client_socket, struct Route *route) {
     printf("HTTP Version: %s\n", http_version);
 
     char template[100] = "";
-    
+
     if (strstr(urlRoute, "/static/") != NULL) {
         strcat(template, "static/index.css");
     } else {
@@ -86,7 +87,7 @@ void handle_client(int client_socket, struct Route *route) {
 
     char *response_data = render_static_file(template);
 
-    // Ensure the response data is not NULL
+    // Pastikan respons tidak NULL
     if (response_data == NULL) {
         response_data = "<html><body><h1>404 Not Found</h1></body></html>";
     }
@@ -99,6 +100,7 @@ void handle_client(int client_socket, struct Route *route) {
     free(response_data);
 }
 
+// Konfigurasi semaphore
 void init_semaphore(sem_t **sem, const char *name, unsigned int value) {
     *sem = sem_open(name, O_CREAT, 0644, value);
     if (*sem == SEM_FAILED) {
@@ -118,4 +120,22 @@ void post_semaphore(sem_t *sem) {
 void close_semaphore(sem_t *sem, const char *name) {
     sem_close(sem);
     sem_unlink(name);
+}
+
+// Penanganan zombie process
+void sigchld_handler(int signo) {
+    while (waitpid(-1, NULL, WNOHANG) > 0);
+}
+
+// Konfigurasi sinyal
+void configure_signal_handling() {
+    struct sigaction sa;
+    sa.sa_handler = sigchld_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_RESTART | SA_NOCLDSTOP;
+
+    if (sigaction(SIGCHLD, &sa, NULL) == -1) {
+        perror("sigaction");
+        exit(EXIT_FAILURE);
+    }
 }
