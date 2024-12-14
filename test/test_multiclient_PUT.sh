@@ -1,8 +1,8 @@
 #!/bin/bash
 
-URL="http://localhost:6969/file/bus.txt"
+URL="http://localhost:6969/defaultfile.txt"
 NUM_CLIENTS=50
-DATA=("cek1 cek2 cek3" "data1 data2 data3" "msg1 msg2 msg3")
+DATA=("ambatubas aaaa" "data1 data2 data3" "msg1 msg2 msg3" "test1 test2 test3" "example1 example2 example3")
 
 # Function to perform a PUT request with random data
 perform_put_request() {
