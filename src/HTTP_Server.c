@@ -119,8 +119,12 @@ void handle_client(int client_socket, struct Route *route)
             // Extract the file name from the URL
             char *file_name = urlRoute + 1; // Skip the leading '/'
 
+            // Create the full path by prepending "/file/"
+            char full_path[4096];
+            snprintf(full_path, sizeof(full_path), "file/%s", file_name);
+
             // Open the file for writing
-            FILE *file = fopen(file_name, "w");
+            FILE *file = fopen(full_path, "w");
             if (file != NULL)
             {
                 // Write the body to the file
@@ -176,7 +180,12 @@ void handle_client(int client_socket, struct Route *route)
     else if (strcmp(method, "DELETE") == 0) {
         // Attempt to delete the specified file
         char *file_name = urlRoute + 1; // Skip the leading '/'
-        if (remove(file_name) == 0) {
+
+        // Create the full path by prepending "/file/"
+        char full_path[4096];
+        snprintf(full_path, sizeof(full_path), "file/%s", file_name);
+    
+        if (remove(full_path) == 0) {
             // Log the DELETE action to the server console
             printf("DELETE request for %s succeeded\n", file_name);
 
