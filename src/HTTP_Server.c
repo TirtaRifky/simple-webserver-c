@@ -10,6 +10,9 @@
 #include <signal.h>
 #include <sys/wait.h>
 
+#define MAX_CONCURRENT_CONNECTIONS 100
+#define MAX_REQUEST_SIZE 4096
+
 // Inisialisasi server
 void init_server(HTTP_Server *server, int port)
 {
@@ -31,7 +34,7 @@ void init_server(HTTP_Server *server, int port)
         exit(EXIT_FAILURE);
     }
 
-    if (listen(server->socket, 3) < 0)
+    if (listen(server->socket, MAX_CONCURRENT_CONNECTIONS) < 0)
     {
         perror("listen");
         close(server->socket);
@@ -42,8 +45,8 @@ void init_server(HTTP_Server *server, int port)
 // Penanganan client
 void handle_client(int client_socket, struct Route *route)
 {
-    char client_msg[4096] = "";
-    char response[4096] = "";
+    char client_msg[MAX_REQUEST_SIZE] = "";
+    char response[MAX_REQUEST_SIZE] = "";
 
     ssize_t bytes_read = read(client_socket, client_msg, sizeof(client_msg) - 1);
     if (bytes_read < 0) {
