@@ -96,30 +96,60 @@ void handle_client(int client_socket, struct Route *route) {
         response_data = "<html><body><h1>404 Not Found</h1></body></html>";
     }
 
-    if (strcmp(method, "POST") == 0 && strcmp(urlRoute, "/echo") == 0) {
-        // Extract the body of the POST request
-        char *body = strstr(response, "\r\n\r\n");
-        
-        
-        if (body != NULL) {
-            body += 4; // Skip the "\r\n\r\n"
-            printf("Message from client: %s\n", body);
+if (strcmp(method, "PUT") == 0) {
+    // Extract the body of the PUT request
+    char *body = strstr(response, "\r\n\r\n");
+    if (body != NULL) {
+        body += 4; // Skip the "\r\n\r\n"
 
-            // Echo the message back to the client
+        // Extract the file name from the URL
+        char *file_name = urlRoute + 1; // Skip the leading '/'
+
+        // Open the file for writing
+        FILE *file = fopen(file_name, "w");
+        if (file != NULL) {
+            // Write the body to the file
+            fprintf(file, "%s", body);
+            fclose(file);
+
+            // Send a success response to the client
             char http_header[4096];
-            snprintf(http_header, sizeof(http_header), "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\nContent-Type: text/plain\r\n\r\n%s", strlen(body), body);
+            snprintf(http_header, sizeof(http_header), "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n");
             send(client_socket, http_header, strlen(http_header), 0);
         } else {
-            // Handle case where body is not found
+            // Handle case where the file could not be opened
             char http_header[4096];
-            snprintf(http_header, sizeof(http_header), "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n");
+            snprintf(http_header, sizeof(http_header), "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\n\r\n");
             send(client_socket, http_header, strlen(http_header), 0);
         }
     } else {
+        // Handle case where body is not found
         char http_header[4096];
-        snprintf(http_header, sizeof(http_header), "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\nContent-Type: text/html\r\n\r\n%s", strlen(response_data), response_data);
+        snprintf(http_header, sizeof(http_header), "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n");
         send(client_socket, http_header, strlen(http_header), 0);
     }
+} else if (strcmp(method, "POST") == 0 && strcmp(urlRoute, "/echo") == 0) {
+    // Extract the body of the POST request
+    char *body = strstr(response, "\r\n\r\n");
+    if (body != NULL) {
+        body += 4; // Skip the "\r\n\r\n"
+        printf("POST body from client: %s\n", body);
+
+        // Echo the message back to the client with a newline
+        char http_header[4096];
+        snprintf(http_header, sizeof(http_header), "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\nContent-Type: text/plain\r\n\r\n%s\n", strlen(body) + 1, body);
+        send(client_socket, http_header, strlen(http_header), 0);
+    } else {
+        // Handle case where body is not found
+        char http_header[4096];
+        snprintf(http_header, sizeof(http_header), "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n");
+        send(client_socket, http_header, strlen(http_header), 0);
+    }
+} else {
+    char http_header[4096];
+    snprintf(http_header, sizeof(http_header), "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\nContent-Type: text/html\r\n\r\n%s", strlen(response_data), response_data);
+    send(client_socket, http_header, strlen(http_header), 0);
+}
 
     close(client_socket);
     free(response_data);
