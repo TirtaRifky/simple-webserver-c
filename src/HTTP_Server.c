@@ -45,8 +45,23 @@ void handle_client(int client_socket, struct Route *route)
     char client_msg[4096] = "";
     char response[4096] = "";
 
-    read(client_socket, client_msg, 4095);
-    strcpy(response, client_msg);
+    ssize_t bytes_read = read(client_socket, client_msg, sizeof(client_msg) - 1);
+    if (bytes_read < 0) {
+        perror("read");
+        close(client_socket);
+        return;
+    }
+    client_msg[bytes_read] = '\0'; // Null-terminate the input
+
+    // Validate the input size
+    if (bytes_read >= sizeof(client_msg) - 1) {
+        fprintf(stderr, "Input too large\n");
+        close(client_socket);
+        return;
+    }
+
+    strncpy(response, client_msg, sizeof(response) - 1);
+    response[sizeof(response) - 1] = '\0'; // Null-terminate the response
 
     // Parsing HTTP request
     char *method = "";
@@ -184,7 +199,7 @@ void handle_client(int client_socket, struct Route *route)
         // Create the full path by prepending "/file/"
         char full_path[4096];
         snprintf(full_path, sizeof(full_path), "file/%s", file_name);
-    
+
         if (remove(full_path) == 0) {
             // Log the DELETE action to the server console
             printf("DELETE request for %s succeeded\n", file_name);
