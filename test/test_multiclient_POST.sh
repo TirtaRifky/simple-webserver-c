@@ -1,7 +1,7 @@
 #!/bin/bash
 
 URL="http://localhost:6969/echo"
-NUM_CLIENTS=10
+NUM_CLIENTS=50
 POST_DATA="sigma"
 HEADER="sigmabot"
 

@@ -138,7 +138,7 @@ void handle_client(int client_socket, struct Route *route)
             char *file_name = urlRoute + 1; // Skip the leading '/'
             // Sanitize the file name
             if (strstr(file_name, "..") != NULL) {
-                printf(stderr, "Invalid file path\n");
+                fprintf(stderr, "Invalid file path\n");
                 char http_header[4096];
                 snprintf(http_header, sizeof(http_header), "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n");
                 send(client_socket, http_header, strlen(http_header), 0);
