@@ -1,10 +1,16 @@
 # simple-webserver-c
 Project Terkait Pembuatan Webserver C, project ini ditujukkansebagai pembelajaran terkait Sistem Operasi, webserver ini dibuat untuk mendukung kebutuhan multiclient, IPC seperti fork dan semaphore digunakan untuk penanganan multiclient.
 
-## Compile Program 
+## Compile & Decompile Program
+### Compile
 ```shell
 make
 ```
+### Decompile
+```shell
+make clean
+```
+
 
 ## Menjalankan Server
 ```shell
